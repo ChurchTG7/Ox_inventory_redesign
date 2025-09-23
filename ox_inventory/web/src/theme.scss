@@ -1,0 +1,190 @@
+/* Theme extension layer: keeps upstream index.scss mostly untouched.
+   Installation: only add `@import './theme';` at end of index.scss.
+*/
+:root {
+  --theme-weightbar: rgba(0,0,0,0.4);
+  --theme-weightbar-fg: rgba(255,255,255,0.85);
+  --theme-weightbar-bg: rgba(0,0,0,0.25);
+  --theme-durability: rgba(0,0,0,0.5);
+  --theme-playername: rgba(193,194,197,1);
+  --theme-itemslot: rgba(12,12,12,0.4);
+  --theme-hover: rgba(255,255,255,0.04);
+  --theme-shadow: rgba(0,0,0,0.6);
+  /* Controls */
+  --theme-ctrl-bg: rgba(40,40,46,0.8);
+  --theme-ctrl-hover: rgba(255,255,255,0.08);
+  --theme-ctrl-text: rgba(220,220,230,1);
+  /* Hotbar override */
+  --theme-hotslot-shadow: rgba(0,0,0,0.75);
+  --theme-hotslot-bg: rgba(12,12,12,0.4);
+  --theme-grad-start: rgba(255,255,255,0.02);
+  --theme-grad-end: rgba(0,0,0,0.25);
+  --theme-grad-direction: down; /* up | down | left | right */
+  /* Ensure all referenced variables have defaults */
+  --theme-panel: #22232c;
+  --theme-border: rgba(0,0,0,0.2);
+  --theme-text: #ffffff;
+  --theme-muted: grey;
+  --theme-number-bg: white;
+  --theme-number-fg: black;
+}
+
+/* Themed scrollbar for color presets dropdown */
+.color-picker-dropdown {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255,255,255,0.25) rgba(255,255,255,0.06);
+}
+.color-picker-dropdown::-webkit-scrollbar {
+  width: 10px;
+}
+.color-picker-dropdown::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+}
+.color-picker-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25);
+  border-radius: 8px;
+  border: 2px solid rgba(0,0,0,0.2);
+}
+.color-picker-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* Inventory slot theming overrides using CSS variables */
+.inventory-slot {
+  background-color: var(--theme-itemslot, rgba(12,12,12,0.4));
+  box-shadow: 0 2px 6px var(--theme-shadow, rgba(0,0,0,0.6));
+  position: relative;
+}
+.inventory-slot-label-box, .inventory-slot-label-text { color: var(--theme-playername, rgba(193,194,197,1)); }
+
+/* gradient overlay (::after) driven by root attributes for mode + direction */
+.inventory-slot::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  mix-blend-mode: overlay;
+  background: linear-gradient(to bottom, var(--theme-grad-start, rgba(255,255,255,0.02)) 50%, var(--theme-grad-end, rgba(0,0,0,0.25)));
+  transition: background .25s ease, opacity .25s ease;
+  z-index: 1; /* sits below hover overlay and image */
+}
+
+/* Linear modes (directional) */
+:root[data-grad-mode='linear'][data-grad-direction='up'] .inventory-slot::after {
+  background: linear-gradient(to top, var(--theme-grad-start, rgba(255,255,255,0.02)) 50%, var(--theme-grad-end, rgba(0,0,0,0.25)));
+}
+:root[data-grad-mode='linear'][data-grad-direction='down'] .inventory-slot::after {
+  background: linear-gradient(to bottom, var(--theme-grad-start, rgba(255,255,255,0.02)) 50%, var(--theme-grad-end, rgba(0,0,0,0.25)));
+}
+:root[data-grad-mode='linear'][data-grad-direction='left'] .inventory-slot::after {
+  background: linear-gradient(to left, var(--theme-grad-start, rgba(255,255,255,0.02)) 50%, var(--theme-grad-end, rgba(0,0,0,0.25)));
+}
+:root[data-grad-mode='linear'][data-grad-direction='right'] .inventory-slot::after {
+  background: linear-gradient(to right, var(--theme-grad-start, rgba(255,255,255,0.02)) 50%, var(--theme-grad-end, rgba(0,0,0,0.25)));
+}
+
+/* Radial modes */
+/* inner: brighter center fading to end color */
+:root[data-grad-mode='radial-inner'] .inventory-slot::after {
+  /* gradient size controls the radius where transition happens */
+  background: radial-gradient(
+    circle at center,
+    var(--theme-grad-start, rgba(255,255,255,0.04)) 0%,
+    var(--theme-grad-end, rgba(0,0,0,0.25)) var(--theme-grad-size, 70%)
+  );
+}
+/* outer: subtle edge vignette fading inward */
+:root[data-grad-mode='radial-outer'] .inventory-slot::after {
+  /* gradient size controls how far from center the darker edge reaches */
+  background: radial-gradient(
+    circle at center,
+    var(--theme-grad-end, rgba(0,0,0,0.25)) calc(var(--theme-grad-size, 40%)),
+    var(--theme-grad-start, rgba(255,255,255,0.02)) 100%
+  );
+}
+
+.inventory-slot:hover::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: var(--theme-hover, rgba(255,255,255,0.04));
+  mix-blend-mode: screen; opacity: .85; transition: background .2s ease, opacity .2s ease; z-index: 2;
+}
+
+/* Separate image layer so gradient/hover are beneath it */
+.inventory-slot-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 7vh;
+  image-rendering: -webkit-optimize-contrast;
+  z-index: 3; /* above gradient/hover, below labels */
+}
+
+/* Ensure textual/content layer sits above the image */
+.item-slot-wrapper {
+  position: relative;
+  z-index: 4;
+}
+
+/* Weight & durability bars adopt variables (reflect live theme changes) */
+.weight-bar { background: var(--theme-weightbar-bg, var(--theme-weightbar, rgba(0,0,0,0.25))); border: 1px inset rgba(0,0,0,0.1); }
+.durability-bar { background: var(--theme-durability, rgba(0,0,0,0.5)); }
+
+/* Utility button for opening editor could be styled by variables if later desired */
+/* Inventory controls styling via theme variables */
+.inventory-control .inventory-control-wrapper {
+  background: transparent; /* do not force background here */
+}
+.inventory-control .inventory-control-button,
+.inventory-control .inventory-control-input {
+  background: var(--theme-ctrl-bg, rgba(40,40,46,0.8));
+  color: var(--theme-ctrl-text, rgba(220,220,230,1));
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.inventory-control .inventory-control-button:hover,
+.inventory-control .inventory-control-input:focus {
+  background: var(--theme-ctrl-hover, rgba(255,255,255,0.08));
+}
+
+/* Hotbar (first 5 player slots) can use a distinct shadow */
+.inventory-grid-container.player-grid > .inventory-slot:nth-child(-n+5) {
+  box-shadow: 0 2px 6px var(--theme-hotslot-shadow, var(--theme-shadow, rgba(0,0,0,0.6)));
+}
+/* When not syncing, allow a different background for first five slots */
+:root[data-hotslot-sync='false'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(-n+5) {
+  background-color: var(--theme-hotslot-bg, var(--theme-itemslot, rgba(12,12,12,0.4)));
+}
+
+/* Optional layout tweak: stack first 5 player slots vertically on the left */
+/* Animated left hotbar: use transforms for smooth transitions */
+.inventory-grid-container.player-grid { transition: padding-left .28s ease; }
+
+/* Base: ensure transform resets smoothly when toggled off */
+.inventory-grid-container.player-grid > .inventory-slot {
+  transition: transform .28s ease;
+  transform: translate(0, 0);
+}
+
+/* When enabled, add left padding to make room (computed from grid size/gap) */
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid {
+  position: relative;
+  padding-left: calc(#{$gridSize} + 4 * #{$gridGap});
+}
+
+/* Move first five to the left column and stack vertically */
+/* Remove first five from layout flow and place them in a left column */
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(-n+5) {
+  position: absolute;
+  z-index: 2;
+  width: $gridSize;
+  height: $gridSize;
+  left: 0;
+  top: 0; /* align to container top; spacing handled via transforms */
+}
+/* Stack vertically using grid size + gap for consistent spacing */
+/* include borders and add a bit of extra breathing room (+4px total above gap) */
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(1) { transform: translateY(calc(0 * (#{$gridSize} + #{$gridGap} + 2.5px))); }
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(2) { transform: translateY(calc(1 * (#{$gridSize} + #{$gridGap} + 2.5px))); }
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(3) { transform: translateY(calc(2 * (#{$gridSize} + #{$gridGap} + 2.5px))); }
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(4) { transform: translateY(calc(3 * (#{$gridSize} + #{$gridGap} + 2.5px))); }
+:root[data-left-hotslots='true'] .inventory-grid-container.player-grid > .inventory-slot:nth-child(5) { transform: translateY(calc(4 * (#{$gridSize} + #{$gridGap} + 2.5px))); }
