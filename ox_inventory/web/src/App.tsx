@@ -117,6 +117,7 @@ const App: React.FC = () => {
       <InventoryComponent />
       <DragPreview />
       <KeyPress />
+      <ThemeBootstrapper />
     </div>
   );
 };

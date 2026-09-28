@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { fetchNui } from '../utils/fetchNui';
-import { applyTheme, InventoryTheme } from './applyTheme';
+import { applyTheme, InventoryTheme, sanitizeTheme } from './applyTheme';
 import ThemeEditor from './ThemeEditor';
 import { DEFAULT_THEME, PRESETS } from './defaults';
 
@@ -104,8 +104,12 @@ const ThemeBootstrapper: React.FC = () => {
 	useEffect(() => {
 		const listener = (ev: MessageEvent) => {
 			if (!ev.data) return;
+			// NUI messages are posted by the game client into this same window; anything
+			// with an identifiable other window/frame as its source is not that.
+			if (ev.source != null && ev.source !== window) return;
 			if (ev.data.action === 'setTheme' && ev.data.data) {
-				setTheme(prev => ({ ...prev, ...(ev.data.data || {}) }));
+				const safe = sanitizeTheme(ev.data.data);
+				setTheme(prev => ({ ...prev, ...safe }));
 				return;
 			}
 			// Heuristics: close theme editor when inventory is being hidden/closed by NUI messages

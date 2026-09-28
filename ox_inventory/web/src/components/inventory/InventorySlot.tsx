@@ -21,11 +21,10 @@ interface SlotProps {
   inventoryType: Inventory['type'];
   inventoryGroups: Inventory['groups'];
   item: Slot;
-  extraClass?: string;
 }
 
 const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> = (
-  { item, inventoryId, inventoryType, inventoryGroups, extraClass },
+  { item, inventoryId, inventoryType, inventoryGroups },
   ref
 ) => {
   const manager = useDragDropManager();
@@ -99,7 +98,10 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
     manager.dispatch({ type: 'dnd-core/END_DRAG' });
   });
 
-  const connectRef = (element: HTMLDivElement) => drag(drop(element));
+  const connectRef = (element: HTMLDivElement | null) => {
+    if (!element) return;
+    drag(drop(element));
+  };
 
   const handleContext = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -125,24 +127,17 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
       ref={refs}
       onContextMenu={handleContext}
       onClick={handleClick}
-      className={`inventory-slot ${extraClass || ''}`}
+      className="inventory-slot"
       style={{
         filter:
           !canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) || !canCraftItem(item, inventoryType)
             ? 'brightness(80%) grayscale(100%)'
             : undefined,
         opacity: isDragging ? 0.4 : 1.0,
+        backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'}`,
         border: isOver ? '1px dashed rgba(255,255,255,0.4)' : '',
-      } as any}
+      }}
     >
-      {/* image moved into its own layer so gradients/hover sit beneath it */}
-      {item?.name && (
-        <div
-          className="inventory-slot-image"
-          aria-hidden
-          style={{ backgroundImage: `url(${getItemUrl(item as SlotWithItem)})` }}
-        />
-      )}
       {isSlotWithItem(item) && (
         <div
           className="item-slot-wrapper"

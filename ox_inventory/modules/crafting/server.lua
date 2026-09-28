@@ -4,7 +4,7 @@ local CraftingBenches = {}
 local Items = require 'modules.items.server'
 local Inventory = require 'modules.inventory.server'
 
----@param id number
+---@param id number | string
 ---@param data table
 local function createCraftingBench(id, data)
 	CraftingBenches[id] = {}
@@ -45,6 +45,13 @@ end
 
 for id, data in pairs(lib.load('data.crafting') or {}) do createCraftingBench(data.name or id, data) end
 
+---@param bench table
+---@param index number
+---@return table?
+local function getCraftingGroups(bench, index)
+	return (shared.target and bench.zones) and bench.zones[index].groups or bench.groups
+end
+
 ---falls back to player coords if zones and points are both nil
 ---@param source number
 ---@param bench table
@@ -64,7 +71,7 @@ lib.callback.register('ox_inventory:openCraftingBench', function(source, id, ind
 	if not left then return end
 
 	if bench then
-		local groups = bench.groups
+		local groups = getCraftingGroups(bench, index)
 		local coords = getCraftingCoords(source, bench, index)
 
 		if not coords then return end
@@ -81,13 +88,14 @@ lib.callback.register('ox_inventory:openCraftingBench', function(source, id, ind
 			end
 		end
 
-		left:openInventory(left)
+		left:openInventory()
 	end
 
 	return { label = left.label, type = left.type, slots = left.slots, weight = left.weight, maxWeight = left.maxWeight }
 end)
 
 local TriggerEventHooks = require 'modules.hooks.server'
+local GetLocks = require 'modules.locks'
 
 lib.callback.register('ox_inventory:craftItem', function(source, id, index, recipeId, toSlot)
 	local left, bench = Inventory(source), CraftingBenches[id]
@@ -95,7 +103,7 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 	if not left then return end
 
 	if bench then
-		local groups = bench.groups
+		local groups = getCraftingGroups(bench, index)
 		local coords = getCraftingCoords(source, bench, index)
 
 		if groups and not server.hasGroup(left, groups) then return end
@@ -182,26 +190,38 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 				end
 			end
 
-			if not TriggerEventHooks('craftItem', {
+            local lockIds = {}
+
+            for slot in pairs(tbl) do
+                lockIds[#lockIds + 1] = ('inventory-%s:slot-%s'):format(left.id, slot)
+            end
+
+            local activeSlots <close> = GetLocks(lockIds)
+
+            if not activeSlots then return end
+
+			local hooks <close> = TriggerEventHooks('craftItem', {
 				source = source,
 				benchId = id,
 				benchIndex = index,
 				recipe = recipe,
 				toInventory = left.id,
 				toSlot = toSlot,
-			}) then return false end
+			})
+
+			if not hooks.success then return false end
 
 			local success = lib.callback.await('ox_inventory:startCrafting', source, id, recipeId)
 
 			if success then
 				for name, needs in pairs(recipe.ingredients) do
-					if Inventory.GetItemCount(left, name) < needs then return end
+					if Inventory.GetItemCount(left, name) < needs then hooks.success = false return end
 				end
 
 				for slot, count in pairs(tbl) do
 					local invSlot = left.items[slot]
 
-					if not invSlot then return end
+					if not invSlot then hooks.success = false return end
 
 					if count < 1 then
 						local item = Items(invSlot.name)
@@ -218,10 +238,10 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 							local emptySlot = Inventory.GetEmptySlot(left)
 
 							if emptySlot then
-								local newItem = Inventory.SetSlot(left, item, 1, table.deepclone(invSlot.metadata), emptySlot)
+								local ok, newItem = Inventory.SetSlot(left, item, 1, table.deepclone(invSlot.metadata), emptySlot)
 
-								if newItem then
-                                    Items.UpdateDurability(left, newItem, item, durability < 0 and 0 or durability)
+								if ok and newItem then
+                                    Items.UpdateDurability(left, newItem --[[@as SlotWithItem]], item, durability < 0 and 0 or durability)
 								end
 							end
 
@@ -240,7 +260,7 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 					else
 						local removed = invSlot and Inventory.RemoveItem(left, invSlot.name, count, nil, slot)
 						-- Failed to remove item (inventory state unexpectedly changed?)
-						if not removed then return end
+						if not removed then hooks.success = false return end
 					end
 				end
 

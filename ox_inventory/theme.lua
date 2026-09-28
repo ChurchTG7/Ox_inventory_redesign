@@ -79,15 +79,22 @@ end)
 -- NUI: save theme JSON silently for a profile
 RegisterNUICallback('saveThemeSettingsSilent', function(data, cb)
     local pid = (type(data) == 'table' and data.profile) and tostring(data.profile) or getThemeProfileKey()
+    local sid = tostring(cache and cache.serverId or GetPlayerServerId(PlayerId()))
     local key = 'oxinv_theme_' .. pid
-    local global = 'oxinv_theme_global'
-    local serverKey = 'oxinv_theme_' .. tostring(cache and cache.serverId or GetPlayerServerId(PlayerId()))
 
     local ok, str = pcall(json.encode, data)
     if ok and str then
         SetResourceKvp(key, str)
-        SetResourceKvp(global, str)
-        SetResourceKvp(serverKey, str)
+
+        -- Only touch the shared fallback keys when we couldn't resolve a real
+        -- per-framework profile (pid fell back to the server id). Otherwise every
+        -- player's save would clobber the global/server-id fallback used by
+        -- players who don't yet have a profile-specific save.
+        if pid == sid then
+            SetResourceKvp('oxinv_theme_global', str)
+            SetResourceKvp('oxinv_theme_' .. sid, str)
+        end
+
         cb(true)
     else
         cb(false)
