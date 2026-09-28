@@ -54,6 +54,44 @@ const VAR_MAP: Partial<Record<keyof InventoryTheme, string>> = {
 	hotbarLeft: '--theme-hotbar-left',
 };
 
+// Known, safe-to-merge theme keys. Used to sanitize theme payloads coming from
+// less trusted sources (e.g. window postMessage) before they're merged into state.
+export const THEME_KEYS: (keyof InventoryTheme)[] = [
+	'profile',
+	'weightBar',
+	'weightBarFg',
+	'weightBarBg',
+	'durability',
+	'playerName',
+	'itemSlot',
+	'hover',
+	'shadow',
+	'hotslotShadow',
+	'gradientStart',
+	'gradientEnd',
+	'gradientDirection',
+	'gradientMode',
+	'gradientStartMode',
+	'gradientSize',
+	'hotbarLeft',
+	'controlBg',
+	'controlHover',
+	'controlText',
+	'hotslotBg',
+	'hotslotSync',
+];
+
+export function sanitizeTheme(input: unknown): Partial<InventoryTheme> {
+	const out: Partial<InventoryTheme> = {};
+	if (!input || typeof input !== 'object') return out;
+	for (const key of THEME_KEYS) {
+		const val = (input as Record<string, unknown>)[key];
+		if (val === undefined) continue;
+		(out as Record<string, unknown>)[key] = val;
+	}
+	return out;
+}
+
 // --- Color normalization helpers ---
 function clamp(n: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, n));
