@@ -2,5 +2,4 @@ modules/logs/**/
 .cfg
 node_modules
 .idea
-.github/
-.vscode
+.luarc.jsonc

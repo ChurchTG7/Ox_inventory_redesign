@@ -175,7 +175,9 @@ function Items.Metadata(inv, item, metadata, count)
 
 	if item.weapon then
 		if type(metadata) ~= 'table' then metadata = {} end
-		if not metadata.durability then metadata.durability = 100 end
+		if not metadata.durability then 
+			metadata = setItemDurability(item, metadata)
+		end
 		if not metadata.ammo and item.ammoname then metadata.ammo = 0 end
 		if not metadata.components then metadata.components = {} end
 
@@ -219,15 +221,16 @@ function Items.Metadata(inv, item, metadata, count)
 		count = 1
 	end
 
-	local response = TriggerEventHooks('createItem', {
+	local hooks <close> = TriggerEventHooks('createItem', {
 		inventoryId = inv and inv.id,
 		metadata = metadata,
 		item = item,
 		count = count,
+		resource = GetInvokingResource() or shared.resource
 	})
 
-	if type(response) == 'table' then
-		metadata = response
+	if hooks.success and type(hooks.result) == 'table' then
+		metadata = hooks.result
 	end
 
 	if metadata.imageurl and Utils.IsValidImageUrl then
