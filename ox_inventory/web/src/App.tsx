@@ -113,7 +113,6 @@ const App: React.FC = () => {
 
   return (
     <div className="app-wrapper">
-      <ThemeBootstrapper />
       <InventoryComponent />
       <DragPreview />
       <KeyPress />
@@ -122,8 +121,8 @@ const App: React.FC = () => {
   );
 };
 
-addEventListener("dragstart", function(event) {
-  event.preventDefault()
-})
+addEventListener('dragstart', function (event) {
+  event.preventDefault();
+});
 
 export default App;

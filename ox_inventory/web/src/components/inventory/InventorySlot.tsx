@@ -21,10 +21,11 @@ interface SlotProps {
   inventoryType: Inventory['type'];
   inventoryGroups: Inventory['groups'];
   item: Slot;
+  extraClass?: string;
 }
 
 const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> = (
-  { item, inventoryId, inventoryType, inventoryGroups },
+  { item, inventoryId, inventoryType, inventoryGroups, extraClass },
   ref
 ) => {
   const manager = useDragDropManager();
@@ -127,17 +128,24 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
       ref={refs}
       onContextMenu={handleContext}
       onClick={handleClick}
-      className="inventory-slot"
+      className={`inventory-slot ${extraClass || ''}`}
       style={{
         filter:
           !canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) || !canCraftItem(item, inventoryType)
             ? 'brightness(80%) grayscale(100%)'
             : undefined,
         opacity: isDragging ? 0.4 : 1.0,
-        backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'}`,
         border: isOver ? '1px dashed rgba(255,255,255,0.4)' : '',
       }}
     >
+      {/* image lives in its own layer so theme gradients/hover sit beneath it */}
+      {item?.name && (
+        <div
+          className="inventory-slot-image"
+          aria-hidden
+          style={{ backgroundImage: `url(${getItemUrl(item as SlotWithItem)})` }}
+        />
+      )}
       {isSlotWithItem(item) && (
         <div
           className="item-slot-wrapper"
