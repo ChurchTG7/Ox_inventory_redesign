@@ -61,11 +61,11 @@ Notes:
 
 ## Build & deploy
 
-Only rebuild if you modify files under `web/src/**`.
+Build the UI on a fresh checkout and after changing files under `web/src/**`.
 
 1) Build the UI (inside `resources/[ox]/ox_inventory/web`):
-   - Install deps once: pnpm i
-   - Build: pnpm run build
+   - Install dependencies: `bun install --frozen-lockfile`
+   - Build: `bun run build`
 2) Restart the resource so FiveM serves the new assets:
    - refresh
    - restart ox_inventory
